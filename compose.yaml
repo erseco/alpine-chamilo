@@ -5,6 +5,13 @@ services:
     environment:
       CHAMILO_INSTALLER_ENABLED: ${CHAMILO_INSTALLER_ENABLED:-false}
       CHAMILO_TRUSTED_PROXIES: ${CHAMILO_TRUSTED_PROXIES:-}
+      # Opt-in unattended installation; see docs/configuration.md.
+      CHAMILO_AUTO_INSTALL: ${CHAMILO_AUTO_INSTALL:-false}
+      CHAMILO_URL: ${CHAMILO_URL:-}
+      CHAMILO_ADMIN_PASSWORD: ${CHAMILO_ADMIN_PASSWORD:-}
+      CHAMILO_ADMIN_EMAIL: ${CHAMILO_ADMIN_EMAIL:-}
+      CHAMILO_LANGUAGE: ${CHAMILO_LANGUAGE:-en_US}
+      DB_PASSWORD: ${DB_PASSWORD}
     ports:
       - "127.0.0.1:${CHAMILO_PORT:-8080}:8080"
     volumes:
