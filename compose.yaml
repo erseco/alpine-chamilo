@@ -3,11 +3,20 @@ services:
     image: ${CHAMILO_IMAGE:-alpine-chamilo:test}
     build: .
     environment:
-      CHAMILO_INSTALLER_ENABLED: "true"
+      CHAMILO_INSTALLER_ENABLED: ${CHAMILO_INSTALLER_ENABLED:-false}
+      CHAMILO_TRUSTED_PROXIES: ${CHAMILO_TRUSTED_PROXIES:-}
+      # Opt-in unattended installation; see docs/configuration.md.
+      CHAMILO_AUTO_INSTALL: ${CHAMILO_AUTO_INSTALL:-false}
+      CHAMILO_URL: ${CHAMILO_URL:-}
+      CHAMILO_ADMIN_PASSWORD: ${CHAMILO_ADMIN_PASSWORD:-}
+      CHAMILO_ADMIN_EMAIL: ${CHAMILO_ADMIN_EMAIL:-}
+      CHAMILO_LANGUAGE: ${CHAMILO_LANGUAGE:-en_US}
+      DB_PASSWORD: ${DB_PASSWORD}
     ports:
       - "127.0.0.1:${CHAMILO_PORT:-8080}:8080"
     volumes:
-      - chamilo-state:/data
+      - chamilo-state:/data:${CHAMILO_STATE_MODE:-rw}
+      - chamilo-config:/var/www/html/config:${CHAMILO_CONFIG_MODE:-rw}
       - chamilo-var:/var/www/html/var
     depends_on:
       db:
@@ -28,5 +37,6 @@ services:
       retries: 30
 volumes:
   chamilo-state:
+  chamilo-config:
   chamilo-var:
   chamilo-db:

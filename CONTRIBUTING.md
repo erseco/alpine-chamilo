@@ -1,3 +1,3 @@
 # Contributing
 
-This image is experimental. Test changes with `docker compose build` and `tests/smoke.sh`, and run ShellCheck on shell scripts. Never publish an image as stable until installation, persistence, upgrade handling and security have been tested end to end. See `docs/research.md` and `README.md` for current limitations.
+Use branches named `feature/...` or `hotfix/...`. Run the checks in [docs/development.md](docs/development.md); every change must keep `tests/install.sh` and `tests/auto-install.sh` green. Do not modify the Chamilo release or its bundled dependencies, and do not relax the version-change guard without a tested upgrade and rollback procedure.

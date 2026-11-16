@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+curl --silent --fail --max-time 5 http://127.0.0.1:8080/fpm-ping >/dev/null
+[ -f /data/installed ] || exit 0
+exec php /usr/local/lib/chamilo-healthcheck.php

@@ -1,0 +1,97 @@
+name: Check upstream releases
+on:
+  schedule:
+    - cron: '23 6 * * *'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Optional stable Chamilo 3 version (for example 3.0.3)'
+        required: false
+        type: string
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+concurrency:
+  group: chamilo-release-monitor
+  cancel-in-progress: false
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Find newer stable release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          set -eu
+          current=$(sed -n 's/^ARG CHAMILO_VERSION=//p' Dockerfile)
+          gh api --paginate --slurp 'repos/chamilo/chamilo-lms/releases?per_page=100' > "$RUNNER_TEMP/releases.json"
+          if [ -n "$REQUESTED_VERSION" ]; then
+            selected=$(python3 scripts/select-release.py "$current" "$REQUESTED_VERSION" < "$RUNNER_TEMP/releases.json")
+            [ -n "$selected" ] || { echo 'Requested version is not a newer eligible release' >&2; exit 1; }
+          else
+            selected=$(python3 scripts/select-release.py "$current" < "$RUNNER_TEMP/releases.json")
+          fi
+          if [ -z "$selected" ]; then
+            echo 'No newer eligible release.'
+            exit 0
+          fi
+          # Split the validated version and SHA-256 fields.
+          # shellcheck disable=SC2086
+          set -- $selected
+          version=$1
+          digest=$2
+          object=$(gh api "repos/chamilo/chamilo-lms/git/ref/tags/v$version")
+          type=$(printf '%s' "$object" | jq -r '.object.type')
+          sha=$(printf '%s' "$object" | jq -r '.object.sha')
+          while [ "$type" = tag ]; do
+            object=$(gh api "repos/chamilo/chamilo-lms/git/tags/$sha")
+            type=$(printf '%s' "$object" | jq -r '.object.type')
+            sha=$(printf '%s' "$object" | jq -r '.object.sha')
+          done
+          [ "$type" = commit ] || { echo 'Tag does not resolve to a commit' >&2; exit 1; }
+          printf 'version=%s\ndigest=%s\ncommit=%s\n' "$version" "$digest" "$sha" >> "$GITHUB_OUTPUT"
+      - name: Create reviewable compatibility update
+        if: steps.release.outputs.version != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+          RELEASE_DIGEST: ${{ steps.release.outputs.digest }}
+          RELEASE_COMMIT: ${{ steps.release.outputs.commit }}
+        run: |
+          set -eu
+          branch="feature/chamilo-v$(printf '%s' "$RELEASE_VERSION" | tr . -)"
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$branch" >/dev/null 2>&1; then
+            existing=$(gh pr list --state all --head "$branch" --json number --jq '.[0].number // empty')
+            if [ -n "$existing" ]; then
+              echo "PR #$existing already exists; leaving it untouched."
+              exit 0
+            fi
+          else
+            git switch -c "$branch"
+          python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+          path = Path('Dockerfile')
+          text = path.read_text()
+          text, n1 = re.subn(r'^ARG CHAMILO_VERSION=.*$', 'ARG CHAMILO_VERSION=' + os.environ['RELEASE_VERSION'], text, flags=re.M)
+          text, n2 = re.subn(r'^ARG CHAMILO_SHA256=.*$', 'ARG CHAMILO_SHA256=' + os.environ['RELEASE_DIGEST'], text, flags=re.M)
+          if n1 != 1 or n2 != 1:
+              raise SystemExit('Expected exactly one version and digest argument')
+          path.write_text(text)
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add Dockerfile
+          git commit -m "Update Chamilo to $RELEASE_VERSION"
+          git push origin "HEAD:refs/heads/$branch"
+          fi
+          # Backticks are literal Markdown in the PR body.
+          # shellcheck disable=SC2016
+          printf 'Candidate upstream release v%s resolves to commit `%s`. The official release asset has SHA-256 `%s`.\n\nValidate PHP compatibility, installation, persistence, security and documentation before merging or publishing.\n' "$RELEASE_VERSION" "$RELEASE_COMMIT" "$RELEASE_DIGEST" > "$RUNNER_TEMP/release-pr.md"
+          gh pr create --base main --head "$branch" --title "Test Chamilo $RELEASE_VERSION" --body-file "$RUNNER_TEMP/release-pr.md"
+          gh workflow run ci.yml --ref "$branch"
