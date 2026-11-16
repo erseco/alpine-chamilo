@@ -15,7 +15,9 @@ The base image's other variables (`opcache_enable`, PHP-FPM process settings and
 
 ## Compose example variables
 
-`compose.yaml` additionally reads `CHAMILO_IMAGE`, `CHAMILO_PORT` (published on `127.0.0.1` only), `DB_PASSWORD`, `DB_ROOT_PASSWORD`, `CHAMILO_STATE_MODE` and `CHAMILO_CONFIG_MODE` (`rw` or `ro`).
+`compose.yaml` additionally reads `CHAMILO_IMAGE`, `CHAMILO_PORT` (published on `127.0.0.1` only), `DB_PASSWORD`, `DB_ROOT_PASSWORD`, `CHAMILO_STATE_MODE` and `CHAMILO_CONFIG_MODE` (`rw` or `ro`). It passes the unattended-installation variables from [installation](installation.md#unattended-installation) to the container.
+
+The example database is MariaDB 12.3 LTS with `MARIADB_AUTO_UPGRADE=1`. A data directory from an older MariaDB is upgraded on start; an 11.4 volume with a full installation was upgraded this way and kept its courses, documents and SCORM tracking. Back up before changing the database version, because a data directory cannot go back to an older MariaDB.
 
 ## Reverse proxy
 
