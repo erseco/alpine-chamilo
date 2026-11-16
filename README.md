@@ -24,7 +24,7 @@ Unofficial container image for [Chamilo LMS](https://chamilo.org) 3.x on Alpine 
 | Architectures | `linux/amd64`, `linux/arm64` |
 | Images | [`erseco/alpine-chamilo:3.0.2`](https://hub.docker.com/r/erseco/alpine-chamilo/tags), [`ghcr.io/erseco/alpine-chamilo:3.0.2`](https://github.com/erseco/alpine-chamilo/pkgs/container/alpine-chamilo) |
 
-Only exact version tags are published, with no `latest`. The image refuses to start on data created by a different Chamilo version until a tested upgrade procedure exists. Pin `3.0.2` (security rebuilds for the same Chamilo version) or a `3.0.2-rN` revision.
+Tags: `3.0.2`, `3.0`, `3` and `latest`. `3.0.2` is rebuilt in place for base-image and Alpine updates and never changes Chamilo version. **Use `3.0.2` in production:** the image refuses to start on data created by a different Chamilo version until a tested upgrade procedure exists, so `3.0`, `3` and `latest` will stop at the next Chamilo release.
 
 ## Quick start
 
