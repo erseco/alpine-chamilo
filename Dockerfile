@@ -8,8 +8,10 @@ LABEL org.opencontainers.image.source="https://github.com/erseco/alpine-chamilo"
       org.opencontainers.image.licenses="GPL-3.0-or-later" \
       org.opencontainers.image.version="${CHAMILO_VERSION}"
 
+# hadolint ignore=DL3066
 USER root
-# hadolint ignore=DL3018
+# The base image already selects ash with pipefail.
+# hadolint ignore=DL3018,DL4006,SC2016
 RUN apk add --no-cache php84-bcmath php84-ldap unzip \
     && rm -rf /var/www/html/* \
     && curl -fsSL --retry 5 "https://github.com/chamilo/chamilo-lms/releases/download/v${CHAMILO_VERSION}/chamilo-${CHAMILO_VERSION}.zip" -o /tmp/chamilo.zip \
@@ -26,9 +28,14 @@ RUN apk add --no-cache php84-bcmath php84-ldap unzip \
     && rm -rf /var/www/html/config/jwt \
     && ln -s /data/jwt /var/www/html/config/jwt \
     && chown -R nobody:nobody /data /var/www/html/config /var/www/html/var
+# The installer copies these defaults into the persistent .env file.
+RUN grep -Fx "APP_ENV='prod'" /var/www/html/.env.dist \
+    && grep -Fx "APP_DEBUG='0'" /var/www/html/.env.dist \
+    && chmod 600 /data/.env
 COPY --chown=nobody rootfs/ /
 RUN chmod +x /docker-entrypoint-init.d/10-chamilo.sh
 ENV nginx_root_directory=/var/www/html/public \
     client_max_body_size=256M post_max_size=256M upload_max_filesize=256M \
     memory_limit=512M opcache_enable=1
+# hadolint ignore=DL3066
 USER nobody

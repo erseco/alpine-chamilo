@@ -20,7 +20,9 @@ until [ "$(docker inspect -f '{{.State.Health.Status}}' "$container")" = healthy
 done
 # The quoted command is evaluated inside the container.
 # shellcheck disable=SC2016
-compose exec -T chamilo sh -c 'test "$(id -u)" = 65534 && php -r '\''foreach (["bcmath", "ldap", "pdo_mysql", "intl", "gd", "zip", "xml", "soap"] as $e) { if (!extension_loaded($e)) exit(1); } $v = require "version.php"; exit($v["new_version"] === "3.0.2" ? 0 : 1);'\'' && nginx -t'
+compose exec -T chamilo sh -c 'test "$(id -u)" = 65534 && php -r '\''foreach (["bcmath", "ldap", "pdo_mysql", "intl", "gd", "zip", "xml", "soap"] as $e) { if (!extension_loaded($e)) exit(1); } if (ini_get("session.cookie_httponly") != 1) exit(1); $v = require "version.php"; exit($v["new_version"] === "3.0.2" ? 0 : 1);'\'' && nginx -t'
+compose exec -T chamilo grep -Fx "APP_ENV='prod'" .env.dist
+compose exec -T chamilo grep -Fx "APP_DEBUG='0'" .env.dist
 port=$(compose port chamilo 8080 | sed 's/.*://')
 url="http://127.0.0.1:$port"
 status() { curl -sS -o /dev/null -w '%{http_code}' "$url$1"; }
@@ -29,6 +31,12 @@ status() { curl -sS -o /dev/null -w '%{http_code}' "$url$1"; }
 [ "$(status /.env)" = 403 ]
 [ "$(status /build/manifest.json)" = 200 ]
 [ "$(status /main/install/index.php)" = 200 ]
+# A plugin can serve private package paths through its PHP entry point.
+docker exec -i -u 0 "$container" sh -c 'cat > /var/www/html/public/plugin/path-info-test.php' <<'PHP'
+<?php echo $_SERVER["SCRIPT_NAME"], "|", $_SERVER["PATH_INFO"];
+PHP
+[ "$(curl -fsS "$url/plugin/path-info-test.php/example/file")" = '/plugin/path-info-test.php|/example/file' ]
+[ "$(status /plugin/does-not-exist.php/example/file)" = 404 ]
 compose exec -T chamilo sh -c 'printf persistence > /var/www/html/var/persistence-check'
 compose restart chamilo >/dev/null
 [ "$(compose exec -T chamilo cat /var/www/html/var/persistence-check)" = persistence ]
