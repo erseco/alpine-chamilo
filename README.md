@@ -17,6 +17,12 @@ The development listener binds to `127.0.0.1:8080`. The web installer uses datab
 
 To test the candidate image, run `tests/smoke.sh`. This creates and removes its own disposable Compose project. For the browser installation and login test, run `npm ci --prefix tests/e2e`, install Playwright Chromium with `tests/e2e/node_modules/.bin/playwright install chromium`, and run `tests/install.sh`. These tests use disposable databases and volumes; they do not establish production readiness. See [research](docs/research.md) for upstream details and outstanding work.
 
+## Upstream release monitoring
+
+The scheduled release monitor checks paginated official GitHub release metadata for newer stable 3.x releases with an uploaded ZIP and SHA-256 digest. It resolves the tag to a commit and opens a reviewable compatibility PR; it never publishes or enables a new major version. The workflow can also be dispatched manually with a specific newer 3.x version. A candidate is not supported until its CI and manual compatibility review pass.
+
+In repository Actions settings, allow GitHub Actions to create pull requests. The workflow uses `GITHUB_TOKEN`; bot-created PR workflows may require approval. It also explicitly dispatches the CI workflow on the candidate branch, because a token-created push does not trigger ordinary push workflows. A GitHub App token can be used if automatic PR-event runs are required without that approval.
+
 ## Security scanning
 
 CI reports high and critical vulnerabilities in Alpine packages and fails on findings with an available fix. Findings without a fix remain visible in the report and require review. The scan explicitly excludes `/var/www/html` and does not scan or modify the Chamilo release or its bundled dependencies.

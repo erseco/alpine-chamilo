@@ -20,7 +20,7 @@ until [ "$(docker inspect -f '{{.State.Health.Status}}' "$container")" = healthy
 done
 # The quoted command is evaluated inside the container.
 # shellcheck disable=SC2016
-compose exec -T chamilo sh -c 'test "$(id -u)" = 65534 && php -r '\''foreach (["bcmath", "ldap", "pdo_mysql", "intl", "gd", "zip", "xml", "soap"] as $e) { if (!extension_loaded($e)) exit(1); } if (ini_get("session.cookie_httponly") != 1) exit(1); $v = require "version.php"; exit($v["new_version"] === "3.0.2" ? 0 : 1);'\'' && nginx -t'
+compose exec -T chamilo sh -c 'test "$(id -u)" = 65534 && php -r '\''foreach (["bcmath", "ldap", "pdo_mysql", "intl", "gd", "zip", "xml", "soap"] as $e) { if (!extension_loaded($e)) exit(1); } if (ini_get("session.cookie_httponly") != 1) exit(1); $v = require "version.php"; exit($v["new_version"] === trim(file_get_contents("/etc/chamilo-version")) ? 0 : 1);'\'' && nginx -t'
 compose exec -T chamilo grep -Fx "APP_ENV='prod'" .env.dist
 compose exec -T chamilo grep -Fx "APP_DEBUG='0'" .env.dist
 port=$(compose port chamilo 8080 | sed 's/.*://')
