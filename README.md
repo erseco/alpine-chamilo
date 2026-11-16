@@ -1,14 +1,28 @@
 # alpine-chamilo
 
+[![CI](https://github.com/erseco/alpine-chamilo/actions/workflows/ci.yml/badge.svg)](https://github.com/erseco/alpine-chamilo/actions/workflows/ci.yml)
+[![Release](https://github.com/erseco/alpine-chamilo/actions/workflows/release.yml/badge.svg)](https://github.com/erseco/alpine-chamilo/actions/workflows/release.yml)
+[![Docker Hub version](https://img.shields.io/docker/v/erseco/alpine-chamilo?sort=semver&label=Docker%20Hub)](https://hub.docker.com/r/erseco/alpine-chamilo)
+[![Docker pulls](https://img.shields.io/docker/pulls/erseco/alpine-chamilo)](https://hub.docker.com/r/erseco/alpine-chamilo)
+[![Image size](https://img.shields.io/docker/image-size/erseco/alpine-chamilo/3.0.2?label=size)](https://hub.docker.com/r/erseco/alpine-chamilo/tags)
+[![GHCR](https://img.shields.io/badge/ghcr.io-erseco%2Falpine--chamilo-blue?logo=github)](https://github.com/erseco/alpine-chamilo/pkgs/container/alpine-chamilo)
+[![Docs](https://img.shields.io/badge/docs-erseco.github.io-blue)](https://erseco.github.io/alpine-chamilo/)
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-green)](https://github.com/erseco/alpine-chamilo/blob/main/LICENSE)
+
 Unofficial container image for [Chamilo LMS](https://chamilo.org) 3.x on Alpine Linux, Nginx and PHP-FPM 8.3, built on [erseco/alpine-php-webserver](https://github.com/erseco/alpine-php-webserver). It runs as `nobody`, uses MariaDB and ships the official Chamilo release unchanged, verified by SHA-256.
 
-**Documentation: https://erseco.github.io/alpine-chamilo/**
+| Where | Link |
+|---|---|
+| Source and issues | [github.com/erseco/alpine-chamilo](https://github.com/erseco/alpine-chamilo) |
+| Docker Hub | [hub.docker.com/r/erseco/alpine-chamilo](https://hub.docker.com/r/erseco/alpine-chamilo) |
+| GitHub Container Registry | [ghcr.io/erseco/alpine-chamilo](https://github.com/erseco/alpine-chamilo/pkgs/container/alpine-chamilo) |
+| Documentation | [erseco.github.io/alpine-chamilo](https://erseco.github.io/alpine-chamilo/) |
 
 | | |
 |---|---|
 | Chamilo | 3.0.2 |
 | Architectures | `linux/amd64`, `linux/arm64` |
-| Images | `erseco/alpine-chamilo:3.0.2`, `ghcr.io/erseco/alpine-chamilo:3.0.2` |
+| Images | [`erseco/alpine-chamilo:3.0.2`](https://hub.docker.com/r/erseco/alpine-chamilo/tags), [`ghcr.io/erseco/alpine-chamilo:3.0.2`](https://github.com/erseco/alpine-chamilo/pkgs/container/alpine-chamilo) |
 
 Only exact version tags are published, with no `latest`. The image refuses to start on data created by a different Chamilo version until a tested upgrade procedure exists. Pin `3.0.2` (security rebuilds for the same Chamilo version) or a `3.0.2-rN` revision.
 
