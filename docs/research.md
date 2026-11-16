@@ -1,6 +1,6 @@
 # Chamilo 3.0.2 investigation
 
-This is research for an image that has not yet been implemented or validated. Do not use this document as deployment instructions.
+These historical research notes predate implementation. See the README for current status and deployment limitations.
 
 ## Upstream release
 
@@ -22,6 +22,6 @@ The inspected `alpine-php-webserver` source defaults to user `nobody`, runs Ngin
 
 ## Outstanding validation
 
-Build and inspect the pinned base image and release artifact; verify required extensions and runtime permissions. Design persistent configuration without hiding release updates, test the real browser installer and installer lockdown, then test uploads, authentication, restarts and upgrade/downgrade handling with MariaDB. Validate all workflows and multi-platform images before publishing. No support, installation, upgrade or security claim has yet been established by these notes.
+Build and inspect the pinned base image and release artifact; verify required extensions and runtime permissions. Design persistent configuration without hiding release updates, test the real browser installer and installer lockdown, then test uploads, authentication, restarts and upgrade/downgrade handling with MariaDB. Validate all workflows and multi-platform images before publishing. These initial notes predate implementation; see the README for current verification and limitations.
 
 The base image `ghcr.io/erseco/alpine-php-webserver:3.24-php84` was pulled with manifest digest `sha256:a4fd132a1a2a8141c69eb4529935f51c1f293aeaa8789e8013e7ef9a05184018`. On the local arm64 engine, `php -v` reported PHP 8.4.27 and `id` reported `nobody` (UID/GID 65534). Its loaded modules did not include bcmath or ldap; the derived image must install and verify them. This check does not establish compatibility of either architecture with Chamilo.

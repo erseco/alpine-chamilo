@@ -22,6 +22,12 @@ wait_http() {
 }
 wait_http
 node tests/e2e/install.cjs install
+attempt=0
+until [ "$(curl -s -o /dev/null -w '%{http_code}' "$TEST_URL/main/install/index.php")" = 403 ]; do
+    attempt=$((attempt + 1))
+    [ "$attempt" -lt 15 ] || { echo >&2 'Installer was not closed after installation'; exit 1; }
+    sleep 1
+done
 compose exec -T chamilo sh -c 'sha256sum /data/.env > /data/env-check; printf persisted > var/integration-persistence'
 compose up -d --no-deps --force-recreate --no-build chamilo
 wait_http
@@ -32,6 +38,7 @@ compose exec -T chamilo sh -c 'sha256sum -c /data/env-check && test "$(cat var/i
 node tests/e2e/install.cjs login
 compose exec -T chamilo /usr/local/bin/chamilo-healthcheck
 compose stop db >/dev/null
+[ "$(curl -s -o /dev/null -w '%{http_code}' "$TEST_URL/main/install/index.php")" = 403 ]
 if compose exec -T chamilo /usr/local/bin/chamilo-healthcheck; then
     echo >&2 'Healthcheck did not detect the stopped database'
     exit 1

@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+while [ ! -f /data/installed ]; do
+    if grep -Eq "^APP_INSTALLED=['\"]?1['\"]?[[:space:]]*$" /data/.env; then
+        touch /data/installed
+        break
+    fi
+    sleep 1
+done
+exec sleep infinity

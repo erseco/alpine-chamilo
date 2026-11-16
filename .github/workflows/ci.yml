@@ -15,7 +15,7 @@ jobs:
       - name: Lint Dockerfile
         uses: hadolint/hadolint-action@06be81baf89a55ffd0e24b8f04a4185738dd3387 # v3.5.0
       - name: Check shell scripts
-        run: shellcheck rootfs/docker-entrypoint-init.d/*.sh tests/*.sh
+        run: shellcheck rootfs/docker-entrypoint-init.d/*.sh rootfs/usr/local/bin/* rootfs/etc/service/*/run tests/*.sh
       - name: Test release selection
         run: python3 -m unittest discover -s tests -p 'test_*.py'
       - name: Validate Compose
