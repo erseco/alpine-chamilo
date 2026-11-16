@@ -33,9 +33,9 @@ status() { curl -sS -o /dev/null -w '%{http_code}' "$url$1"; }
 [ "$(status /main/install/index.php)" = 200 ]
 # A plugin can serve private package paths through its PHP entry point.
 docker exec -i -u 0 "$container" sh -c 'cat > /var/www/html/public/plugin/path-info-test.php' <<'PHP'
-<?php echo $_SERVER["SCRIPT_NAME"], "|", $_SERVER["PATH_INFO"];
+<?php echo $_SERVER["SCRIPT_NAME"], "|", $_SERVER["PATH_INFO"], "|", $_SERVER["HTTP_AUTHORIZATION"] ?? "";
 PHP
-[ "$(curl -fsS "$url/plugin/path-info-test.php/example/file")" = '/plugin/path-info-test.php|/example/file' ]
+[ "$(curl -fsS -H "Authorization: Bearer test-token" "$url/plugin/path-info-test.php/example/file")" = '/plugin/path-info-test.php|/example/file|Bearer test-token' ]
 [ "$(status /plugin/does-not-exist.php/example/file)" = 404 ]
 compose exec -T chamilo sh -c 'printf persistence > /var/www/html/var/persistence-check'
 compose restart chamilo >/dev/null

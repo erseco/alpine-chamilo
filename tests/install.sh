@@ -1,7 +1,9 @@
 #!/bin/sh
 set -eu
 
-export DB_PASSWORD='install-test-password' DB_ROOT_PASSWORD='install-root-password' CHAMILO_PORT=0
+# The literal dollar signs exercise credential escaping.
+# shellcheck disable=SC2016
+export DB_PASSWORD='test Pa$$word!#@' DB_ROOT_PASSWORD='install-root-password' CHAMILO_PORT=0
 export CHAMILO_IMAGE="${CHAMILO_IMAGE:-alpine-chamilo:test}"
 project="chamilo-install-$$"
 compose() { docker compose -p "$project" -f compose.yaml "$@"; }
@@ -28,4 +30,11 @@ wait_http
 compose exec -T chamilo sh -c 'sha256sum -c /data/env-check && test "$(cat var/integration-persistence)" = persisted'
 [ "$(curl -s -o /dev/null -w '%{http_code}' "$TEST_URL/main/install/index.php")" = 403 ]
 node tests/e2e/install.cjs login
+compose exec -T chamilo /usr/local/bin/chamilo-healthcheck
+compose stop db >/dev/null
+if compose exec -T chamilo /usr/local/bin/chamilo-healthcheck; then
+    echo >&2 'Healthcheck did not detect the stopped database'
+    exit 1
+fi
+compose start db >/dev/null
 printf '%s\n' 'Installation, login and persistence checks passed.'

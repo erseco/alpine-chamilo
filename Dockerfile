@@ -28,14 +28,18 @@ RUN apk add --no-cache php84-bcmath php84-ldap unzip \
     && rm -rf /var/www/html/config/jwt \
     && ln -s /data/jwt /var/www/html/config/jwt \
     && chown -R nobody:nobody /data /var/www/html/config /var/www/html/var
+# The image uses MariaDB, so it does not need the base image's PostgreSQL driver.
+RUN apk del --no-cache php84-pgsql
 # The installer copies these defaults into the persistent .env file.
 RUN grep -Fx "APP_ENV='prod'" /var/www/html/.env.dist \
     && grep -Fx "APP_DEBUG='0'" /var/www/html/.env.dist \
     && chmod 600 /data/.env
 COPY --chown=nobody rootfs/ /
-RUN chmod +x /docker-entrypoint-init.d/10-chamilo.sh
+RUN chmod +x /docker-entrypoint-init.d/10-chamilo.sh /usr/local/bin/chamilo-healthcheck
 ENV nginx_root_directory=/var/www/html/public \
     client_max_body_size=256M post_max_size=256M upload_max_filesize=256M \
     memory_limit=512M opcache_enable=1
 # hadolint ignore=DL3066
 USER nobody
+
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 CMD ["/usr/local/bin/chamilo-healthcheck"]

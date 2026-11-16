@@ -19,6 +19,25 @@ jobs:
         run: DB_PASSWORD=test DB_ROOT_PASSWORD=test docker compose config -q
       - name: Build image
         run: docker build -t alpine-chamilo:test .
+      - name: Report system package vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: alpine-chamilo:test
+          scanners: vuln
+          vuln-type: os
+          skip-dirs: /var/www/html
+          severity: HIGH,CRITICAL
+          exit-code: '0'
+      - name: Reject fixable system package vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: alpine-chamilo:test
+          scanners: vuln
+          vuln-type: os
+          skip-dirs: /var/www/html
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
       - name: Run smoke tests
         run: tests/smoke.sh
       - name: Install browser test dependencies
