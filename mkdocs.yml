@@ -1,0 +1,15 @@
+site_name: Alpine Chamilo
+site_description: Unofficial Chamilo image on Alpine Linux
+site_url: https://erseco.github.io/alpine-chamilo/
+repo_url: https://github.com/erseco/alpine-chamilo
+repo_name: erseco/alpine-chamilo
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - content.code.copy
+nav:
+  - Overview: index.md
+  - Development and testing: development.md
+  - Security: security.md
+  - Release research: research.md
