@@ -64,4 +64,6 @@ until compose exec -T chamilo /usr/local/bin/chamilo-healthcheck >/dev/null 2>&1
     sleep 2
 done
 node tests/e2e/install.cjs proxy
+export TEST_COMPOSE_PROJECT="$project"
+tests/tls-proxy.sh
 printf '%s\n' 'Installation, login and persistence checks passed.'
