@@ -2,7 +2,7 @@
 set -eu
 
 proxy_file=/etc/nginx/chamilo-trusted-proxies.conf
-fpm_file=/etc/php84/php-fpm.d/zz-chamilo-proxies.conf
+fpm_file=/etc/php83/php-fpm.d/zz-chamilo-proxies.conf
 : > "$proxy_file"
 proxy_list=
 # Split only the administrator-supplied comma-separated list.
@@ -30,4 +30,4 @@ else
     rm -f "$fpm_file"
 fi
 nginx -t
-php-fpm84 -t
+php-fpm83 -t
