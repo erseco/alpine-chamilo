@@ -1,44 +1,30 @@
-# alpine-chamilo (experimental)
+# alpine-chamilo
 
-This repository is developing an unofficial Chamilo LMS image based on Alpine, Nginx and PHP-FPM. **It is not ready for production or publication.** The only candidate release is Chamilo 3.0.2 with PHP 8.4; the web installation, login and basic persistence have been exercised locally. Upgrades and production security still require further validation.
+Unofficial container image for [Chamilo LMS](https://chamilo.org) 3.x on Alpine Linux, Nginx and PHP-FPM 8.3, built on [erseco/alpine-php-webserver](https://github.com/erseco/alpine-php-webserver). It runs as `nobody`, uses MariaDB and ships the official Chamilo release unchanged, verified by SHA-256.
 
-## Local development
+**Documentation: https://erseco.github.io/alpine-chamilo/**
 
-Copy `.env.example` to `.env` and replace both passwords with distinct random values. Then run:
+| | |
+|---|---|
+| Chamilo | 3.0.2 |
+| Architectures | `linux/amd64`, `linux/arm64` |
+| Images | `erseco/alpine-chamilo:3.0.2`, `ghcr.io/erseco/alpine-chamilo:3.0.2` |
+
+Only exact version tags are published, with no `latest`. The image refuses to start on data created by a different Chamilo version until a tested upgrade procedure exists. Pin `3.0.2` (security rebuilds for the same Chamilo version) or a `3.0.2-rN` revision.
+
+## Quick start
 
 ```sh
-docker compose build
-docker compose up -d
+cp .env.example .env   # set passwords, CHAMILO_URL and the administrator
+docker compose up -d --no-build
 ```
 
-The development listener binds to `127.0.0.1:8080`. The web installer uses database host `db`, port `3306`, database and user `chamilo`, and the password selected in `.env`. The database port is not exposed. Do not expose the installer to an untrusted network. The installer is not automated.
+`CHAMILO_AUTO_INSTALL=true` installs Chamilo on first start (this accepts Chamilo's GPLv3 license). The container turns healthy once the installation has finished; then log in as `admin`. The official web installer is also supported. Afterwards, mount state and configuration read-only. See [installation](docs/installation.md).
 
-After the installer completes and `/main/install/index.php` returns 403, set `CHAMILO_INSTALLER_ENABLED=false`, `CHAMILO_STATE_MODE=ro`, and `CHAMILO_CONFIG_MODE=ro` in `.env`, then run `docker compose up -d` to recreate the application container. The browser test verifies login and database connectivity with both volumes read-only.
+Back up the four volumes together: see [operations](docs/operations.md). To add plugins, build a derived image: see [plugins](docs/plugins.md). For reverse proxies, set `CHAMILO_TRUSTED_PROXIES`: see [configuration](docs/configuration.md) and [security](docs/security.md).
 
-`chamilo-state` holds `.env` and JWT keys, `chamilo-config` holds the installation's configuration, `chamilo-var` holds application data, and `chamilo-db` holds MariaDB data. Back up all four together while the application and database are quiescent. Image version changes currently fail closed; upgrades and downgrades are unsupported. Do not delete volumes when recreating containers.
+## Tested
 
-To test the candidate image, run `tests/smoke.sh`. This creates and removes its own disposable Compose project. For the browser installation and login test, run `npm ci --prefix tests/e2e`, install Playwright Chromium with `tests/e2e/node_modules/.bin/playwright install chromium`, and run `tests/install.sh`. These tests use disposable databases and volumes; they do not establish production readiness. See [research](docs/research.md) for upstream details and outstanding work.
+Real browser tests on every change cover the web installer, the unattended installer, administrator login, course creation, document upload and download, SCORM import and playback, persistence across recreation with read-only state, backup and restore, installer lockdown, database-failure health, trusted proxies and TLS, and a derived plugin image. Upgrades between Chamilo versions, Traefik and Cloudflare are not tested. See [development](docs/development.md).
 
-## Upstream release monitoring
-
-The scheduled release monitor checks paginated official GitHub release metadata for newer stable 3.x releases with an uploaded ZIP and SHA-256 digest. It resolves the tag to a commit and opens a reviewable compatibility PR; it never publishes or enables a new major version. The workflow can also be dispatched manually with a specific newer 3.x version. A candidate is not supported until its CI and manual compatibility review pass.
-
-In repository Actions settings, allow GitHub Actions to create pull requests. The workflow uses `GITHUB_TOKEN`; bot-created PR workflows may require approval. It also explicitly dispatches the CI workflow on the candidate branch, because a token-created push does not trigger ordinary push workflows. A GitHub App token can be used if automatic PR-event runs are required without that approval.
-
-## Security scanning
-
-CI reports high and critical vulnerabilities in Alpine packages and fails on findings with an available fix. Findings without a fix remain visible in the report and require review. The scan explicitly excludes `/var/www/html` and does not scan or modify the Chamilo release or its bundled dependencies.
-
-## Reverse proxy configuration
-
-`CHAMILO_TRUSTED_PROXIES` is an optional comma-separated list of explicit proxy addresses or CIDR ranges, for example `172.20.0.2` or `172.20.0.0/24`. Leave it empty for direct access. Do not trust broad ranges that include untrusted clients. The proxy must replace or validate incoming `X-Forwarded-*` headers, and network policy must prevent clients from reaching the container through an address treated as trusted. Only root-path deployments have been considered; forwarded prefixes are discarded. See [security](docs/security.md) for current limitations.
-
-## Plugin development
-
-Chamilo plugins can be mounted under `/var/www/html/public/plugin/`. The Nginx configuration forwards `PATH_INFO` for plugin PHP entry points, as required by the eXeLearning plugin. A development image may need Composer to regenerate Chamilo's autoloader and clear its cache after adding a plugin; this image does not install Composer or do that automatically. Plugin installation and upgrades have not yet been tested end to end with this image.
-
-## Security limitations
-
-During first installation, access must be restricted externally. The image blocks the installer by default; the local Compose example explicitly enables it for initial setup. A supervised guard checks the persistent `.env` every second and permanently blocks installer URLs for that state volume once it sees `APP_INSTALLED=1`; the guard is also applied at startup. Keep the installer restricted to a trusted network throughout installation, verify that it returns 403 afterwards, and set `CHAMILO_INSTALLER_ENABLED=false` in `.env`. The marker may also be created during an interrupted installation; recover from a backup or investigate the incomplete installation before attempting recovery. The healthcheck checks PHP-FPM and, after installation is detected, the configured MariaDB connection. Set `CHAMILO_TRUSTED_PROXIES` to the exact proxy IPs or CIDR ranges visible to the container before enabling a reverse proxy. Forwarded headers from other peers are stripped. A local Nginx TLS-terminating proxy, certificate and hostname verification, and secure session cookies have been tested. Traefik and Cloudflare have not yet been verified. The Compose example supports remounting configuration and state read-only after installation as described above. The configuration volume contains release-specific configuration; version changes remain blocked rather than silently hiding new files.
-
-The upstream application is GPL-3.0-or-later; this repository's files are distributed under the same license. Chamilo is a trademark of its respective owner. This is not an official image.
+Chamilo and this repository are GPL-3.0-or-later. Chamilo is a trademark of its owner; this is not an official image.

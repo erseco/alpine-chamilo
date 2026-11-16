@@ -1,26 +1,44 @@
 # Alpine Chamilo
 
-This is an **experimental, unofficial** Chamilo LMS image using Alpine Linux, Nginx and PHP-FPM. It is not ready for production or publication. Chamilo 3.0.2 on PHP 8.4 is the only candidate currently tested; earlier major releases are excluded. No registry image or stable release is available yet.
+An **unofficial** container image for [Chamilo LMS](https://chamilo.org) 3.x on Alpine Linux, Nginx and PHP-FPM 8.3, built on [erseco/alpine-php-webserver](https://github.com/erseco/alpine-php-webserver). It runs as `nobody`, uses MariaDB, and ships the official Chamilo release archive unchanged, verified by SHA-256.
 
-## Local evaluation
+| | |
+|---|---|
+| Chamilo | 3.0.2 |
+| PHP | 8.3 |
+| Architectures | `linux/amd64`, `linux/arm64` |
+| Registries | `erseco/alpine-chamilo`, `ghcr.io/erseco/alpine-chamilo` |
+| Tags | exact versions only: `3.0.2`, and `3.0.2-rN` for image revisions of the same Chamilo version |
 
-Clone the repository, copy `.env.example` to `.env`, set distinct random database passwords, and run:
+There is deliberately no `latest`, `3` or `3.0` tag: the image refuses to start on a volume created by another Chamilo version (see [operations](operations.md#versions-and-upgrades)), so a floating tag would stop your site after an upstream release.
+
+## Quick start
 
 ```sh
-docker compose build
-docker compose up -d
+git clone https://github.com/erseco/alpine-chamilo.git
+cd alpine-chamilo
+cp .env.example .env   # set distinct random passwords, the URL and the administrator
+docker compose up -d --no-build
 ```
 
-Open `http://127.0.0.1:8080/` and complete the official web installer. Use `db` as database host, port `3306`, `chamilo` as database and username, and the database password from `.env`. Choose your own administrator credentials. The installer can replace tables in its selected database; use a new, dedicated database. Restrict access to the installer to trusted users.
+With `CHAMILO_AUTO_INSTALL=true` the container installs Chamilo on first start and becomes healthy when it is ready; log in at `CHAMILO_URL` as `admin` with `CHAMILO_ADMIN_PASSWORD`. Alternatively use Chamilo's own [web installer](installation.md#web-installer).
 
-A guard closes installer endpoints once Chamilo writes `APP_INSTALLED=1`. Check that `/main/install/index.php` returns 403 after installation then set `CHAMILO_INSTALLER_ENABLED=false`, `CHAMILO_STATE_MODE=ro`, and `CHAMILO_CONFIG_MODE=ro` in `.env` and run `docker compose up -d` to recreate the container with configuration and state mounted read-only. An interrupted installation can also create the guard marker; investigate before attempting recovery.
+The example stack binds HTTP to `127.0.0.1:8080` and does not publish MariaDB. Put a TLS-terminating reverse proxy in front for real use and set [`CHAMILO_TRUSTED_PROXIES`](configuration.md).
 
-The Compose stack binds HTTP to localhost and does not publish MariaDB. A trusted proxy can be configured with `CHAMILO_TRUSTED_PROXIES`; a local Nginx TLS proxy has been tested, but Traefik and Cloudflare have not. Redis, automatic installation, automatic upgrades and scheduled tasks are not implemented.
+## What has been tested
 
-## Persistence and upgrades
+On every change, CI (amd64) and local runs (arm64) cover: image contents and routing, the real web installer in a browser, the unattended installer, administrator login, course creation, document upload and download, SCORM 1.2 import and playback (including the SCORM API), restart and container recreation with read-only state, cold backup and restore into a new stack, installer lockdown, database-failure healthcheck, trusted-proxy header filtering, a real Nginx TLS proxy, and a derived image that adds a plugin. The eXeLearning plugin was also exercised end to end on a derived image.
 
-The `chamilo-state` volume stores `.env` and JWT keys, `chamilo-config` stores release-specific configuration, `chamilo-var` stores application data including uploaded assets and plugins, and `chamilo-db` stores the database. Back up all four consistently while the application and database are quiescent. Restore all four together with the same image version. Practice restore before relying on any backup.
+Not tested: upgrades between Chamilo versions (blocked on purpose), Traefik or Cloudflare, Redis, scheduled tasks, LDAP, mail delivery, PostgreSQL.
 
-The image refuses to start if the stored image version differs from its own. Upgrades, downgrades, rollback across versions and custom-plugin upgrades are not yet supported or tested. Never remove named volumes as part of an ordinary container restart.
+## More
 
-See [development and testing](development.md), [security limitations](security.md), and the [historical investigation](research.md). The [repository](https://github.com/erseco/alpine-chamilo) contains the Compose example and current code.
+- [Installation](installation.md)
+- [Configuration](configuration.md)
+- [Operations: volumes, backup, versions](operations.md)
+- [Plugins](plugins.md)
+- [Security](security.md)
+- [Development and testing](development.md)
+- [Historical research notes](research.md)
+
+Chamilo is GPL-3.0-or-later, and so is this repository. Chamilo is a trademark of its owner; this image is not official.

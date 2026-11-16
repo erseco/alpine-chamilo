@@ -1,9 +1,29 @@
-# Security and current limitations
+# Security
 
-Do not deploy this experimental image in production. The first-install web wizard is unauthenticated and must be reachable only by trusted administrators. The image disables the wizard by default; the local Compose example enables it for installation and binds the port to localhost. A persistent marker blocks installer routes when an installation starts writing its configuration, including if MariaDB is unavailable or the container is recreated. An interrupted installation can require manual recovery.
+## Image
 
-The installer requires write access to `.env`, `config/` and `var/`. After installation, set `CHAMILO_INSTALLER_ENABLED=false`, `CHAMILO_STATE_MODE=ro` and `CHAMILO_CONFIG_MODE=ro` in `.env`, then run `docker compose up -d` to recreate the container with both state and configuration read-only. Login and database connectivity with those mounts have been tested. Any maintenance that needs to change them requires a deliberate, restricted read-write transition. Restrict access to all volumes and protect backups: configuration and keys contain secrets. PHP session cookies are configured as HTTP-only. The healthcheck checks PHP-FPM and, once installation is detected, the configured MariaDB connection; it is not a full application or user-experience check.
+- The Chamilo release archive is downloaded at build time and must match the SHA-256 published by upstream. It is used unchanged; only deployment files are added around it.
+- The base image is pinned by its multi-architecture manifest digest.
+- Nginx and PHP-FPM run as `nobody`. The application code, the startup scripts, the healthcheck and the installer are owned by root and are not writable at run time; `config/`, `var/` and `/data` are the writable volumes. The base image rewrites its Nginx and PHP configuration as `nobody` at every start, so those configuration directories remain writable by that user: after a suspected compromise, recreate the container (`docker compose up -d --force-recreate`) rather than restarting it.
+- Nginx denies hidden files, `check.php`, `legacy.php`, PHP under static asset directories, and every root-level PHP script except `index.php`. It sends `X-Content-Type-Options: nosniff` and `X-Frame-Options: SAMEORIGIN`.
+- Session cookies are HTTP-only, and they are `Secure` when the request arrives over HTTPS through a trusted proxy.
+- No credentials are built in. The unattended installer requires an administrator password of at least 12 characters, and the example `.env` values must be replaced.
+- Releases carry BuildKit provenance attestations.
 
-The base-image scan is limited to Alpine OS packages; it excludes `/var/www/html` and does not scan or change the Chamilo release or its bundled dependencies. CI reports high and critical OS findings, including those without fixes, and fails for high or critical OS findings with a known fix. Review findings and update the base or packages as appropriate.
+## Installer
 
-Set `CHAMILO_TRUSTED_PROXIES` to a comma-separated list of explicit IP addresses or CIDR ranges visible to the container. The image discards forwarded headers from other peers, rejects all-address ranges, and configures the same list for Symfony. Simulated forwarded HTTPS, secure session cookies and spoofed direct headers have been tested. A local Nginx TLS-terminating proxy has also been tested with certificate and hostname verification; Traefik and Cloudflare have not. The trusted proxy must overwrite or validate incoming forwarded headers, and network policy must prevent untrusted clients from entering through a trusted address. Forwarded path prefixes are not supported. Administrative credentials are chosen during the installer; none are built into the image. The example passwords in `.env.example` must be replaced.
+The web installer is unauthenticated. It is closed unless `CHAMILO_INSTALLER_ENABLED=true`. Once an installation is recorded, a persistent marker in the state volume blocks it permanently, even if the variable stays `true`, the database is down or the container is recreated. Keep the port private while the installer is open. The unattended installer never runs against a database that already contains tables.
+
+After installation, mount state and configuration read-only (see [installation](installation.md#after-installation)).
+
+## Reverse proxies
+
+Forwarded headers are honoured only from the addresses in `CHAMILO_TRUSTED_PROXIES`. Nginx strips them for every other peer, and the same list is passed to Symfony. `tests/proxy.sh` checks forged headers, accepted proxy headers and invalid ranges. `tests/tls-proxy.sh` checks a real Nginx TLS proxy with certificate and hostname verification. Traefik and Cloudflare have not been tested.
+
+## Vulnerability scanning
+
+CI scans the Alpine packages of every build with Trivy (`--pkg-types os`, `/var/www/html` excluded). It reports all high and critical findings and fails on those with a fix available. The Chamilo release and its bundled PHP and JavaScript dependencies are deliberately outside this project's scanning and are not modified: report issues in them to [Chamilo](https://github.com/chamilo/chamilo-lms/security). For the same reason no SBOM of the application layer is attached.
+
+## Reporting
+
+Report vulnerabilities in this image's own files privately through [GitHub security advisories](https://github.com/erseco/alpine-chamilo/security/advisories/new).

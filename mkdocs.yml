@@ -1,5 +1,5 @@
 site_name: Alpine Chamilo
-site_description: Unofficial Chamilo image on Alpine Linux
+site_description: Unofficial Chamilo LMS 3.x image on Alpine Linux, Nginx and PHP-FPM
 site_url: https://erseco.github.io/alpine-chamilo/
 repo_url: https://github.com/erseco/alpine-chamilo
 repo_name: erseco/alpine-chamilo
@@ -10,6 +10,10 @@ theme:
     - content.code.copy
 nav:
   - Overview: index.md
-  - Development and testing: development.md
+  - Installation: installation.md
+  - Configuration: configuration.md
+  - Operations: operations.md
+  - Plugins: plugins.md
   - Security: security.md
-  - Release research: research.md
+  - Development and testing: development.md
+  - Research notes: research.md

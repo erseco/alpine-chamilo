@@ -1,31 +1,37 @@
 # Development and testing
 
-The image uses a pinned `alpine-php-webserver` manifest and verifies the upstream 3.0.2 release archive by SHA-256 at build time. The application runs as `nobody`; its web root is `/var/www/html/public`. Changing a runtime environment variable cannot replace the code baked into the image.
+The Dockerfile pins the `alpine-php-webserver` 3.24/PHP 8.3 manifest and the Chamilo release with its SHA-256. PHP 8.3 matches the release itself: its `composer.json` sets `config.platform.php` to 8.3, and upstream's browser CI runs on 8.3.
 
-Run the short checks with:
+## Checks
 
 ```sh
+hadolint Dockerfile
 shellcheck rootfs/docker-entrypoint-init.d/*.sh rootfs/usr/local/bin/* rootfs/etc/service/*/run tests/*.sh
 actionlint
 python3 -m unittest discover -s tests -p 'test_*.py'
-docker compose config -q
-docker compose build
-tests/smoke.sh
-tests/proxy.sh
-```
-
-Compose configuration requires `DB_PASSWORD` and `DB_ROOT_PASSWORD` in `.env` or the environment. The smoke test creates its own disposable Compose project and volumes. It checks PHP, Nginx, routing, installer blocking, `PATH_INFO`, authorization forwarding and conservative version-change rejection.
-
-For the full browser installation test, install Node.js and then run:
-
-```sh
+DB_PASSWORD=x DB_ROOT_PASSWORD=x docker compose config -q
+docker build -t alpine-chamilo:test .
+tests/smoke.sh          # contents, permissions, routing, PATH_INFO, installer and version guards
+tests/proxy.sh          # trusted-proxy header filtering
 npm ci --prefix tests/e2e
 tests/e2e/node_modules/.bin/playwright install chromium
-tests/install.sh
+tests/install.sh        # web installer, courses, read-only state, DB failure, TLS proxy, backup/restore
+tests/auto-install.sh   # unattended install in a derived plugin image, recreation, refusal to reuse a database
 ```
 
-This test uses a new disposable database, accepts the Chamilo GPLv3 license, installs with test credentials, logs in, recreates the container with state and configuration read-only and checks persistence, installer blocking database failure detection, a simulated trusted HTTPS proxy and a real local Nginx TLS proxy with a disposable test CA. It destroys only its own test project and volumes.
+Every script creates and removes its own Compose project and volumes, and ignores any `.env` in the working copy. On macOS you can use the installed Chrome: `PLAYWRIGHT_EXECUTABLE_PATH='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'`. The browser tests accept Chamilo's GPLv3 license on disposable databases.
 
-A plugin can be mounted under `/var/www/html/public/plugin/`. The image does not include Composer or automatically regenerate the application classmap; plugin deployment and upgrades require additional work. The eXeLearning plugin uses `PATH_INFO`, which the smoke test covers. Full plugin integration has not yet been verified with this image.
+`tests/e2e/install.cjs` drives Chamilo's real UI: installer steps, login, course creation (`main/admin/course_add.php`), document upload (Uppy), SCORM import (`/resources/lp/<node>/import`) and the SCORM player, where the fixture package in `tests/fixtures/scorm` reports whether it found the SCORM API.
 
-The release monitor considers stable 3.x GitHub release metadata, resolves tags and opens a compatibility PR when a newer release is found. Repository Actions settings must permit creating PRs. Bot-created PR workflows may require approval; the monitor separately dispatches CI on the candidate branch. A PR is not proof of compatibility or permission to publish.
+## Workflows
+
+- **CI** runs all of the above on amd64 for pushes and pull requests, and is reused by the release.
+- **Release** runs on `vX.Y.Z` and `vX.Y.Z-rN` tags. It checks that the tag matches `CHAMILO_VERSION`, runs CI, builds `linux/amd64` and `linux/arm64` with provenance, pushes to GHCR, smoke-tests the pushed digest, copies the same manifest to Docker Hub, and verifies that every tag on both registries points to that digest. Docker Hub needs the `DOCKER_USERNAME` and `DOCKER_PASSWORD` repository secrets.
+- **Documentation** builds this site with Zensical and deploys it to GitHub Pages from `main`.
+- **Check upstream releases** runs daily. When a newer stable Chamilo 3.x release with a published SHA-256 appears, it opens a pull request that updates the version and digest and dispatches CI on it. It never publishes. Merging such a pull request is not enough: version changes stay blocked at run time until an upgrade procedure exists, so a new Chamilo version needs that work first. The repository must allow GitHub Actions to create pull requests.
+
+## Releasing
+
+1. Merge to `main` with CI green.
+2. Tag: `git tag v3.0.2` for a new Chamilo version, or `git tag v3.0.2-r1` for an image-only revision (base image or package updates), and push the tag.
+3. Check the release run's summary for the published digest.

@@ -1,6 +1,6 @@
 # Chamilo 3.0.2 investigation
 
-These historical research notes predate implementation. See the README for current status and deployment limitations.
+These historical research notes predate implementation and are kept for reference. The image later moved from PHP 8.4 to 8.3, the platform the release's `vendor/` was resolved for. See the other pages for the current behaviour.
 
 ## Upstream release
 
