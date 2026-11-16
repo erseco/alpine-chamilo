@@ -3,7 +3,7 @@ set -eu
 
 # The literal dollar signs exercise credential escaping.
 # shellcheck disable=SC2016
-export DB_PASSWORD='test Pa$$word!#@' DB_ROOT_PASSWORD='install-root-password' CHAMILO_PORT=0
+export DB_PASSWORD='test Pa$$word!#@' DB_ROOT_PASSWORD='install-root-password' CHAMILO_PORT=0 CHAMILO_INSTALLER_ENABLED=true CHAMILO_STATE_MODE=rw CHAMILO_CONFIG_MODE=rw
 export CHAMILO_IMAGE="${CHAMILO_IMAGE:-alpine-chamilo:test}" CHAMILO_TRUSTED_PROXIES=
 project="chamilo-install-$$"
 compose() { docker compose -p "$project" -f compose.yaml "$@"; }
@@ -29,8 +29,17 @@ until [ "$(curl -s -o /dev/null -w '%{http_code}' "$TEST_URL/main/install/index.
     sleep 1
 done
 compose exec -T chamilo sh -c 'sha256sum /data/.env > /data/env-check; printf persisted > var/integration-persistence'
+export CHAMILO_STATE_MODE=ro CHAMILO_CONFIG_MODE=ro CHAMILO_INSTALLER_ENABLED=false
 compose up -d --no-deps --force-recreate --no-build chamilo
 wait_http
+if compose exec -T chamilo sh -c 'touch /data/readonly-test' >/dev/null 2>&1; then
+    echo >&2 'State volume must be read-only after installation'
+    exit 1
+fi
+if compose exec -T chamilo sh -c 'touch /var/www/html/config/readonly-test' >/dev/null 2>&1; then
+    echo >&2 'Configuration volume must be read-only after installation'
+    exit 1
+fi
 # This command is evaluated inside the container.
 # shellcheck disable=SC2016
 compose exec -T chamilo sh -c 'sha256sum -c /data/env-check && test "$(cat var/integration-persistence)" = persisted'

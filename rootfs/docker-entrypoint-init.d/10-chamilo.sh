@@ -19,6 +19,6 @@ case "${CHAMILO_INSTALLER_ENABLED:-false}" in
     false) touch /tmp/chamilo-installer-disabled ;;
     *) echo >&2 "CHAMILO_INSTALLER_ENABLED must be true or false"; exit 1 ;;
 esac
-if grep -Eq "^APP_INSTALLED=['\"]?1['\"]?[[:space:]]*$" /data/.env; then
+if [ ! -f /data/installed ] && grep -Eq "^APP_INSTALLED=['\"]?1['\"]?[[:space:]]*$" /data/.env; then
     touch /data/installed
 fi

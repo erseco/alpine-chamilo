@@ -24,7 +24,7 @@ tests/e2e/node_modules/.bin/playwright install chromium
 tests/install.sh
 ```
 
-This test uses a new disposable database, accepts the Chamilo GPLv3 license, installs with test credentials, logs in, recreates the container and checks persistence, installer blocking database failure detection and a simulated trusted HTTPS proxy. It destroys only its own test project and volumes.
+This test uses a new disposable database, accepts the Chamilo GPLv3 license, installs with test credentials, logs in, recreates the container with state and configuration read-only and checks persistence, installer blocking database failure detection and a simulated trusted HTTPS proxy. It destroys only its own test project and volumes.
 
 A plugin can be mounted under `/var/www/html/public/plugin/`. The image does not include Composer or automatically regenerate the application classmap; plugin deployment and upgrades require additional work. The eXeLearning plugin uses `PATH_INFO`, which the smoke test covers. Full plugin integration has not yet been verified with this image.
 

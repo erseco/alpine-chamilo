@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-export DB_PASSWORD='test-password-only' DB_ROOT_PASSWORD='test-root-password-only' CHAMILO_PORT=0
+export DB_PASSWORD='test-password-only' DB_ROOT_PASSWORD='test-root-password-only' CHAMILO_PORT=0 CHAMILO_INSTALLER_ENABLED=false CHAMILO_STATE_MODE=rw CHAMILO_CONFIG_MODE=rw
 export CHAMILO_IMAGE="${CHAMILO_IMAGE:-alpine-chamilo:test}" CHAMILO_TRUSTED_PROXIES=
 project="chamilo-proxy-$$"
 compose() { docker compose -p "$project" -f compose.yaml "$@"; }
