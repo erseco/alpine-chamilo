@@ -1,13 +1,15 @@
 name: Release
-# Publishes vX.Y.Z and vX.Y.Z-rN tags. The image refuses Chamilo version changes,
-# so only exact version tags are published: no latest, X or X.Y aliases.
+# Publishes X.Y.Z plus the X.Y, X and latest aliases when X.Y.Z is the newest release in
+# their range. A vX.Y.Z tag releases a Chamilo version; a manual run on main rebuilds the
+# current one (for example after a base-image update) and moves the same tags.
 on:
   push:
-    tags: ['v[0-9]+.[0-9]+.[0-9]+', 'v[0-9]+.[0-9]+.[0-9]+-r[0-9]+']
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: release-${{ github.ref }}
+  group: release
   cancel-in-progress: false
 jobs:
   version:
@@ -17,18 +19,24 @@ jobs:
       version: ${{ steps.tags.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Match the tag to the packaged Chamilo version
+        with:
+          fetch-depth: 0
+      - name: Resolve the version and its aliases
         id: tags
         env:
+          EVENT: ${{ github.event_name }}
           TAG: ${{ github.ref_name }}
         run: |
           set -eu
-          release=${TAG#v}
-          version=${release%%-r*}
-          packaged=$(sed -n 's/^ARG CHAMILO_VERSION=//p' Dockerfile)
-          [ "$version" = "$packaged" ] || { echo "Tag $TAG does not match Chamilo $packaged" >&2; exit 1; }
-          tags=$version
-          [ "$release" = "$version" ] || tags="$tags $release"
+          version=$(sed -n 's/^ARG CHAMILO_VERSION=//p' Dockerfile)
+          if [ "$EVENT" = workflow_dispatch ]; then
+            [ "$GITHUB_REF" = refs/heads/main ] || { echo 'Rebuild only from main' >&2; exit 1; }
+            git rev-parse -q --verify "refs/tags/v$version" >/dev/null || { echo "v$version was never released; push the tag instead" >&2; exit 1; }
+          else
+            [ "${TAG#v}" = "$version" ] || { echo "Tag $TAG does not match Chamilo $version" >&2; exit 1; }
+          fi
+          tags=$(git tag | scripts/release-tags.sh "$version")
+          echo "Publishing: $tags"
           printf 'version=%s\ntags=%s\n' "$version" "$tags" >> "$GITHUB_OUTPUT"
   test:
     needs: version

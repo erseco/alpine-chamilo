@@ -26,12 +26,12 @@ Every script creates and removes its own Compose project and volumes, and ignore
 ## Workflows
 
 - **CI** runs all of the above on amd64 for pushes and pull requests, and is reused by the release.
-- **Release** runs on `vX.Y.Z` and `vX.Y.Z-rN` tags. It checks that the tag matches `CHAMILO_VERSION`, runs CI, builds `linux/amd64` and `linux/arm64` with provenance, pushes to GHCR, smoke-tests the pushed digest, copies the same manifest to Docker Hub, and verifies that every tag on both registries points to that digest. Docker Hub needs the `DOCKER_USERNAME` and `DOCKER_PASSWORD` repository secrets.
+- **Release** runs on `vX.Y.Z` tags, and manually on `main` to rebuild the current version. It checks that the version matches `CHAMILO_VERSION`, computes the aliases with `scripts/release-tags.sh` (`X.Y`, `X` and `latest` only for the newest release in their range), runs CI, builds `linux/amd64` and `linux/arm64` with provenance, pushes to GHCR, smoke-tests the pushed digest, copies the same manifest to Docker Hub, and verifies that every tag on both registries points to that digest. Docker Hub needs the `DOCKER_USERNAME` and `DOCKER_PASSWORD` repository secrets.
 - **Documentation** builds this site with Zensical and deploys it to GitHub Pages from `main`.
 - **Check upstream releases** runs daily. When a newer stable Chamilo 3.x release with a published SHA-256 appears, it opens a pull request that updates the version and digest and dispatches CI on it. It never publishes. Merging such a pull request is not enough: version changes stay blocked at run time until an upgrade procedure exists, so a new Chamilo version needs that work first. The repository must allow GitHub Actions to create pull requests.
 
 ## Releasing
 
 1. Merge to `main` with CI green.
-2. Tag: `git tag v3.0.2` for a new Chamilo version, or `git tag v3.0.2-r1` for an image-only revision (base image or package updates), and push the tag.
+2. New Chamilo version: `git tag vX.Y.Z` and push the tag. Same Chamilo version with a new base image or packages: run the **Release** workflow manually on `main` (`gh workflow run release.yml --ref main`); it republishes `X.Y.Z` and its aliases.
 3. Check the release run's summary for the published digest.

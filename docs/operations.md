@@ -40,12 +40,12 @@ Chamilo version changed from 3.0.2 to 3.0.3; upgrades and downgrades are not yet
 
 and exits without touching anything. Go back to the previous tag and your site works as before. This is deliberate. A Chamilo upgrade runs database migrations and can change the configuration files kept in `chamilo-config`. That has no tested, reversible procedure in this image yet, and an image swap must not run it silently.
 
-For the same reason, only exact tags are published:
+### Tags
 
-- `3.0.2`: Chamilo 3.0.2, moved to the newest image revision for that Chamilo version (base image and Alpine security updates).
-- `3.0.2-rN`: one immutable image revision.
+- `3.0.2`: Chamilo 3.0.2. It is rebuilt in place when only the base image or Alpine packages change, never with another Chamilo version.
+- `3.0`, `3` and `latest`: the newest Chamilo release in that range.
 
-Follow `3.0.2` to receive security rebuilds without a version change, or pin `3.0.2-rN` or a digest for fully reproducible deployments. Each release copies the same multi-architecture manifest to both registries, and the release workflow checks that the digests match.
+**Use `3.0.2` in production.** On `3.0`, `3` or `latest`, the next Chamilo release changes the version under your volumes, and the container stops with the message above until an upgrade procedure exists. Your data is untouched; pin `3.0.2` again to start. For fully reproducible deployments, pin the digest shown in the release summary. Each release copies the same multi-architecture manifest to both registries, and the release workflow checks that the digests match.
 
 ## Health and logs
 

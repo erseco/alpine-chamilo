@@ -8,9 +8,9 @@ An **unofficial** container image for [Chamilo LMS](https://chamilo.org) 3.x on 
 | PHP | 8.3 |
 | Architectures | `linux/amd64`, `linux/arm64` |
 | Registries | [Docker Hub `erseco/alpine-chamilo`](https://hub.docker.com/r/erseco/alpine-chamilo), [GHCR `ghcr.io/erseco/alpine-chamilo`](https://github.com/erseco/alpine-chamilo/pkgs/container/alpine-chamilo) |
-| Tags | exact versions only: `3.0.2`, and `3.0.2-rN` for image revisions of the same Chamilo version |
+| Tags | `3.0.2`, `3.0`, `3`, `latest` |
 
-There is deliberately no `latest`, `3` or `3.0` tag: the image refuses to start on a volume created by another Chamilo version (see [operations](operations.md#versions-and-upgrades)), so a floating tag would stop your site after an upstream release.
+Use `3.0.2` in production. The image refuses to start on a volume created by another Chamilo version (see [operations](operations.md#versions-and-upgrades)), so `3.0`, `3` and `latest` will stop at the next Chamilo release until upgrades are supported. `3.0.2` is rebuilt in place for base-image and Alpine updates.
 
 ## Quick start
 
