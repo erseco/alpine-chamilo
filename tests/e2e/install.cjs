@@ -9,7 +9,16 @@ const password = 'Testing-Only-Password-123!';
         headless: true,
         ...(process.env.PLAYWRIGHT_EXECUTABLE_PATH && { executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH }),
     });
-    const page = await browser.newPage({ locale: 'es-ES' });
+    const isProxy = process.argv[2] === 'proxy';
+    const page = await browser.newPage({
+        locale: 'es-ES',
+        ...(isProxy && { extraHTTPHeaders: {
+            'X-Forwarded-For': '203.0.113.7',
+            'X-Forwarded-Host': new URL(url).host,
+            'X-Forwarded-Port': '443',
+            'X-Forwarded-Proto': 'https',
+        } }),
+    });
     page.setDefaultTimeout(180000);
     page.setDefaultNavigationTimeout(180000);
 
@@ -43,6 +52,10 @@ const password = 'Testing-Only-Password-123!';
         assert.equal((await response).status(), 200);
         await page.waitForURL('**/admin');
         await page.getByText('Cerrar sesión').first().waitFor();
+        if (isProxy) {
+            const cookies = await page.context().cookies();
+            assert.ok(cookies.some(cookie => cookie.name === 'chamilo2' && cookie.secure), 'Expected a secure Chamilo session cookie behind HTTPS');
+        }
         console.log('Administrator login succeeded');
     } finally {
         await browser.close();

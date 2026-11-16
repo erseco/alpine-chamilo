@@ -4,7 +4,7 @@ set -eu
 # The literal dollar signs exercise credential escaping.
 # shellcheck disable=SC2016
 export DB_PASSWORD='test Pa$$word!#@' DB_ROOT_PASSWORD='install-root-password' CHAMILO_PORT=0
-export CHAMILO_IMAGE="${CHAMILO_IMAGE:-alpine-chamilo:test}"
+export CHAMILO_IMAGE="${CHAMILO_IMAGE:-alpine-chamilo:test}" CHAMILO_TRUSTED_PROXIES=
 project="chamilo-install-$$"
 compose() { docker compose -p "$project" -f compose.yaml "$@"; }
 cleanup() { compose down -v --remove-orphans >/dev/null; }
@@ -44,4 +44,15 @@ if compose exec -T chamilo /usr/local/bin/chamilo-healthcheck; then
     exit 1
 fi
 compose start db >/dev/null
+CHAMILO_TRUSTED_PROXIES=$(docker network inspect "${project}_default" --format '{{(index .IPAM.Config 0).Gateway}}')
+export CHAMILO_TRUSTED_PROXIES
+compose up -d --no-deps --force-recreate --no-build chamilo
+wait_http
+attempt=0
+until compose exec -T chamilo /usr/local/bin/chamilo-healthcheck >/dev/null 2>&1; do
+    attempt=$((attempt + 1))
+    [ "$attempt" -lt 60 ] || { compose logs chamilo db; exit 1; }
+    sleep 2
+done
+node tests/e2e/install.cjs proxy
 printf '%s\n' 'Installation, login and persistence checks passed.'

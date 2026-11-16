@@ -43,6 +43,8 @@ jobs:
           exit-code: '1'
       - name: Run smoke tests
         run: tests/smoke.sh
+      - name: Test trusted proxy boundaries
+        run: tests/proxy.sh
       - name: Install browser test dependencies
         run: |
           npm ci --prefix tests/e2e

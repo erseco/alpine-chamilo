@@ -4,6 +4,7 @@ services:
     build: .
     environment:
       CHAMILO_INSTALLER_ENABLED: "true"
+      CHAMILO_TRUSTED_PROXIES: ${CHAMILO_TRUSTED_PROXIES:-}
     ports:
       - "127.0.0.1:${CHAMILO_PORT:-8080}:8080"
     volumes:

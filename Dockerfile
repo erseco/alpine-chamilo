@@ -35,7 +35,7 @@ RUN grep -Fx "APP_ENV='prod'" /var/www/html/.env.dist \
     && grep -Fx "APP_DEBUG='0'" /var/www/html/.env.dist \
     && chmod 600 /data/.env
 COPY --chown=nobody rootfs/ /
-RUN chmod +x /docker-entrypoint-init.d/10-chamilo.sh /usr/local/bin/chamilo-healthcheck /etc/service/chamilo-installer-guard/run
+RUN chmod +x /docker-entrypoint-init.d/10-chamilo.sh /docker-entrypoint-init.d/20-trusted-proxies.sh /usr/local/bin/chamilo-healthcheck /etc/service/chamilo-installer-guard/run
 ENV nginx_root_directory=/var/www/html/public \
     client_max_body_size=256M post_max_size=256M upload_max_filesize=256M \
     memory_limit=512M opcache_enable=1
