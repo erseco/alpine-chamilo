@@ -14,6 +14,10 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
+    ignore:
+      # Stay on the MariaDB LTS series; moving to a new LTS is a deliberate change.
+      - dependency-name: "mariadb"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
 
   - package-ecosystem: "github-actions" # See documentation for possible values
     directory: "/" # Location of package manifests
