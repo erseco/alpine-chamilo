@@ -2,7 +2,7 @@
 set -eu
 
 : "${TEST_COMPOSE_PROJECT:?Run through tests/install.sh}"
-compose() { docker compose -p "$TEST_COMPOSE_PROJECT" -f compose.yaml "$@"; }
+compose() { docker compose --env-file /dev/null -p "$TEST_COMPOSE_PROJECT" -f compose.yaml "$@"; }
 tls_dir=$(mktemp -d "${TMPDIR:-/tmp}/chamilo-tls.XXXXXX")
 proxy="${TEST_COMPOSE_PROJECT}-tls"
 cleanup() {

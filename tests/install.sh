@@ -6,9 +6,13 @@ set -eu
 export DB_PASSWORD='test Pa$$word!#@' DB_ROOT_PASSWORD='install-root-password' CHAMILO_PORT=0 CHAMILO_INSTALLER_ENABLED=true CHAMILO_STATE_MODE=rw CHAMILO_CONFIG_MODE=rw
 export CHAMILO_IMAGE="${CHAMILO_IMAGE:-alpine-chamilo:test}" CHAMILO_TRUSTED_PROXIES=
 project="chamilo-install-$$"
-compose() { docker compose -p "$project" -f compose.yaml "$@"; }
-cleanup() { compose down -v --remove-orphans >/dev/null; }
+compose() { docker compose --env-file /dev/null -p "$project" -f compose.yaml "$@"; }
+TEST_TMPDIR=$(mktemp -d "${TMPDIR:-/tmp}/chamilo-install.XXXXXX")
+TEST_SCORM_ZIP="$TEST_TMPDIR/scorm.zip"
+export TEST_TMPDIR TEST_SCORM_ZIP
+cleanup() { compose down -v --remove-orphans >/dev/null; rm -rf "$TEST_TMPDIR"; }
 trap cleanup EXIT HUP INT TERM
+(cd tests/fixtures/scorm && zip -q "$TEST_SCORM_ZIP" imsmanifest.xml index.html)
 compose up -d --no-build
 wait_http() {
     port=$(compose port chamilo 8080 | sed 's/.*://')
@@ -28,6 +32,7 @@ until [ "$(curl -s -o /dev/null -w '%{http_code}' "$TEST_URL/main/install/index.
     [ "$attempt" -lt 15 ] || { echo >&2 'Installer was not closed after installation'; exit 1; }
     sleep 1
 done
+node tests/e2e/install.cjs course
 compose exec -T chamilo sh -c 'sha256sum /data/.env > /data/env-check; printf persisted > var/integration-persistence'
 export CHAMILO_STATE_MODE=ro CHAMILO_CONFIG_MODE=ro CHAMILO_INSTALLER_ENABLED=false
 compose up -d --no-deps --force-recreate --no-build chamilo
@@ -44,7 +49,7 @@ fi
 # shellcheck disable=SC2016
 compose exec -T chamilo sh -c 'sha256sum -c /data/env-check && test "$(cat var/integration-persistence)" = persisted'
 [ "$(curl -s -o /dev/null -w '%{http_code}' "$TEST_URL/main/install/index.php")" = 403 ]
-node tests/e2e/install.cjs login
+node tests/e2e/install.cjs course-check
 compose exec -T chamilo /usr/local/bin/chamilo-healthcheck
 compose stop db >/dev/null
 [ "$(curl -s -o /dev/null -w '%{http_code}' "$TEST_URL/main/install/index.php")" = 403 ]
@@ -66,4 +71,5 @@ done
 node tests/e2e/install.cjs proxy
 export TEST_COMPOSE_PROJECT="$project"
 tests/tls-proxy.sh
-printf '%s\n' 'Installation, login and persistence checks passed.'
+tests/backup-restore.sh
+printf '%s\n' 'Installation, course, persistence and backup checks passed.'

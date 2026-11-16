@@ -1,0 +1,4 @@
+<!doctype html><html><head><title>SCORM test</title><script>
+function api(w){while(w){if(w.API)return w.API;if(w.parent===w)break;w=w.parent;}return null;}
+window.onload=function(){var a=api(window);document.getElementById('s').textContent=a?'scorm-api-found':'scorm-api-missing';if(a){a.LMSInitialize('');a.LMSSetValue('cmi.core.lesson_status','completed');a.LMSCommit('');}};
+</script></head><body><p id="s">loading</p></body></html>
