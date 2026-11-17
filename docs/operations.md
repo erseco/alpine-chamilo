@@ -43,7 +43,7 @@ and exits without touching anything. Go back to the previous tag and your site w
 ### Tags
 
 - `3.0.2`: Chamilo 3.0.2. It is rebuilt in place when only the base image or Alpine packages change, never with another Chamilo version.
-- `3.0`, `3` and `latest`: the newest Chamilo release in that range.
+- `3.0`, `3` and `latest`: the newest Chamilo release in that range. New upstream Chamilo 3.x releases are built and published automatically once they pass the full test suite.
 
 **Use `3.0.2` in production.** On `3.0`, `3` or `latest`, the next Chamilo release changes the version under your volumes, and the container stops with the message above until an upgrade procedure exists. Your data is untouched; pin `3.0.2` again to start. For fully reproducible deployments, pin the digest shown in the release summary. Each release copies the same multi-architecture manifest to both registries, and the release workflow checks that the digests match.
 
