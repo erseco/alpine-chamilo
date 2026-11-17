@@ -1,7 +1,8 @@
 name: Release
 # Publishes X.Y.Z plus the X.Y, X and latest aliases when X.Y.Z is the newest release in
-# their range. A vX.Y.Z tag releases a Chamilo version; a manual run on main rebuilds the
-# current one (for example after a base-image update) and moves the same tags.
+# their range. A vX.Y.Z tag (pushed, or dispatched by check-release.yml) releases a Chamilo
+# version; a manual run on main rebuilds the current one (for example after a base-image
+# update) and moves the same tags.
 on:
   push:
     tags: ['v[0-9]+.[0-9]+.[0-9]+']
@@ -24,16 +25,18 @@ jobs:
       - name: Resolve the version and its aliases
         id: tags
         env:
-          EVENT: ${{ github.event_name }}
           TAG: ${{ github.ref_name }}
         run: |
           set -eu
           version=$(sed -n 's/^ARG CHAMILO_VERSION=//p' Dockerfile)
-          if [ "$EVENT" = workflow_dispatch ]; then
-            [ "$GITHUB_REF" = refs/heads/main ] || { echo 'Rebuild only from main' >&2; exit 1; }
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            # Pushed, or dispatched on the tag by the upstream release monitor.
+            [ "${TAG#v}" = "$version" ] || { echo "Tag $TAG does not match Chamilo $version" >&2; exit 1; }
+          elif [ "$GITHUB_REF" = refs/heads/main ]; then
             git rev-parse -q --verify "refs/tags/v$version" >/dev/null || { echo "v$version was never released; push the tag instead" >&2; exit 1; }
           else
-            [ "${TAG#v}" = "$version" ] || { echo "Tag $TAG does not match Chamilo $version" >&2; exit 1; }
+            echo 'Release from a vX.Y.Z tag or rebuild from main' >&2
+            exit 1
           fi
           tags=$(git tag | scripts/release-tags.sh "$version")
           echo "Publishing: $tags"
