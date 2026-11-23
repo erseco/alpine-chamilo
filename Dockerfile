@@ -1,5 +1,5 @@
 # The digest pins the multi-platform manifest, not just the local architecture.
-FROM ghcr.io/erseco/alpine-php-webserver:3.24-php83@sha256:07e318285d7445f31558d9ecd5cdbc4c784c7d674766353a9d31ea1b0ba4ac8b
+FROM ghcr.io/erseco/alpine-php-webserver:3.24-php83@sha256:b8b941c6ac450a098a3ed4378b4c9e4601af8e75d7e770ce6eeae0b2489d9fbd
 
 ARG CHAMILO_VERSION=3.0.2
 ARG CHAMILO_SHA256=c54055f1754b377287c8e73880d2b967128b6d6a86bf3b91262f56cb4df855cf
